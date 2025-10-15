@@ -299,24 +299,39 @@ func (r *Resources) MatchTag(tag language.Tag) (language.Tag, bool) {
 			tags = append(tags, t)
 		}
 
-		if len(tags) == 0 {
-			for t := range r.children.All() {
-				tags = append(tags, t)
-			}
-
-			// make random bundle order at least somehow stable
-			slices.SortFunc(tags, func(a, b language.Tag) int {
-				return strings.Compare(a.String(), b.String())
-			})
+		// repair missing priorities
+		var tmpChildTags []language.Tag
+		for t := range r.children.All() {
+			tmpChildTags = append(tmpChildTags, t)
 		}
+
+		// make random bundle order at least somehow stable
+		slices.SortFunc(tmpChildTags, func(a, b language.Tag) int {
+			return strings.Compare(a.String(), b.String())
+		})
+
+		for _, childTag := range tmpChildTags {
+			if !slices.Contains(tags, childTag) {
+				tags = append(tags, childTag)
+			}
+		}
+
+		r.priorities.Replace(tags)
+		r.priorities.Flush()
+
+		fmt.Println(tags)
 
 		tmp := language.NewMatcher(tags)
 		r.matcher.Store(&tmp)
 		matcher = &tmp
 	}
 
-	t, _, confi := (*matcher).Match(tag)
-	if t != language.Und {
+	t, idx, confi := (*matcher).Match(tag)
+	if confi == language.Exact {
+		if v, ok := r.priorities.At(idx); ok {
+			return v, true
+		}
+
 		return t, true
 	}
 
@@ -324,7 +339,11 @@ func (r *Resources) MatchTag(tag language.Tag) (language.Tag, bool) {
 		return tag, false
 	}
 
-	return t, true
+	if v, ok := r.priorities.At(idx); ok {
+		return v, true
+	}
+
+	return language.Und, false
 }
 
 // MatchString finds the best bundle match and resolves the localized string. If the best match does not contain

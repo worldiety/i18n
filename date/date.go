@@ -29,6 +29,16 @@ const (
 // potentially customized through the global resources, but that has to be still decided.
 func Format(tag language.Tag, format Pattern, t time.Time) string {
 	b, _ := tag.Base()
+
+	if t.IsZero() {
+		switch b.String() {
+		case "de":
+			return "undefiniert"
+		default:
+			return "undefined"
+		}
+	}
+
 	switch b.String() {
 	case "de":
 		switch format {

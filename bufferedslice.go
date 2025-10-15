@@ -140,6 +140,14 @@ func (s *bufferedSlice[T]) Clear() {
 	s.dirty.Store(true)
 }
 
+func (s *bufferedSlice[T]) Replace(slice []T) {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+
+	s.mutSlice = slices.Clone(slice)
+	s.dirty.Store(true)
+}
+
 func (s *bufferedSlice[T]) All() iter.Seq2[int, T] {
 	return func(yield func(int, T) bool) {
 		if !s.dirty.Load() {
