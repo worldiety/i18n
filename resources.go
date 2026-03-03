@@ -318,7 +318,7 @@ func (r *Resources) MatchTag(tag language.Tag) (language.Tag, bool) {
 
 		r.priorities.Replace(tags)
 		r.priorities.Flush()
-		
+
 		tmp := language.NewMatcher(tags)
 		r.matcher.Store(&tmp)
 		matcher = &tmp
